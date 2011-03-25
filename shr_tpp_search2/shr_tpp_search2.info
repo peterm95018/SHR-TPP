@@ -1,0 +1,4 @@
+; $Id$
+name = SHR TPP Search2
+description = This is a module that overrides exposed filter settings to create select elements (drop downs) for Title and Title Code.
+core = 6.x

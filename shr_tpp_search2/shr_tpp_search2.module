@@ -1,0 +1,63 @@
+<?php
+/**
+ * Implementation of hook_form_alter()
+ *
+ * Overrides exposed filter settings to create select elements (drop downs) for Title and Title Code fields.
+ * Reset button src: http://fleetthought.com/blog-post/adding-reset-button-exposed-views-filters
+ * My source question at http://drupal.org/node/463990 
+ */
+
+  function shr_tpp_search2_form_alter(&$form, &$form_state, $form_id) {
+    switch($form_id) {
+      case 'views_exposed_form':
+        if (isset($form['field_title_code_value'])) {
+          $content_field = content_fields('field_title_code'); // note difference in field name
+          $db_info = content_database_info($content_field);
+		$result = db_query("SELECT DISTINCT " . $db_info['columns']['value']['column'] . " FROM {" . $db_info['table'] . "}" . " ORDER BY " . $db_info['columns']['value']['column'] );
+          
+          $options[""] = "<Any>";
+          while($row = db_fetch_array($result)) {
+            $value = $row[$db_info['columns']['value']['column']];
+			if(strlen($value) == 3) { // pad with leading 0 where needed
+				$value = sprintf("%04d", $value);
+			}
+            $options[$value] = $value;
+          }
+           
+          $field = &$form['field_title_code_value'];
+          unset($field['#size']);
+          $field['#type'] = "select";
+          $field['#options'] = $options;
+          $field['#default_value'] = $content_field['widget']['default_value']['value'];
+		$form['submit']['#value'] = t('Search');
+		// Add a Reset button
+		$exposed_views = array('tpp_titles_listing_2'); // add a comma separated list of views to add.
+		    if (in_array($form_state['view']->name, $exposed_views)) {
+		      $current_display = $form_state['view']->current_display;
+		      $form['reset'] = array(
+		        '#type' => 'markup',
+		        '#value' => '<input class="form-button" type="reset" 
+		value="Reset" onClick="javascript:window.location=\'/'. 
+		$form_state['view']->display[$current_display]->
+		display_options['path'] .'\';" />',
+		      );
+		    }
+        } // end if
+
+		$result2 = db_query("SELECT DISTINCT  title, title from {node} WHERE  type = 'tpp_titles' ORDER BY title ASC");
+	
+		unset($form['title']['#size']);
+		$form['title']['#type'] = "select";
+		#$form['title']['#multiple'] = 'TRUE'; // added 01/19/2010 multi-select option
+		$options2[""] = "<Any>";
+		while($row = db_fetch_array($result2)) {
+		    $value = $row['title'];
+		    $options2[$value] = $value;
+		  }
+		  $form['title']['#options'] = $options2;
+		
+		break;  
+    } // end case
+  }  
+//print dsm($content_field);
+?>
